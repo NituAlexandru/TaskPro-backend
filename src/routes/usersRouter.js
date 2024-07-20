@@ -15,49 +15,64 @@ const usersRouter = express.Router();
 //changeTheme
 
 const changeTheme = async (req, res) => {
+  try {
+    const userId = req.user._id; // Ensure user ID is correctly accessed
+    console.log('Request user ID for theme update:', userId);
 
-  const { error } = updateThemeSchema.validate(req.body);
+    const { theme } = req.body;
 
-  if (error) {
-    throw createError(400, error.details[0].message);
-  }
+    const { error } = updateThemeSchema.validate({ theme });
+    if (error) {
+      throw createError(400, error.details[0].message);
+    }
 
-    const {theme} = req.body;
-    const userId  = req.user._id;
-    const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        {theme},
-        {new:true, runValidators: true}
-    );
-
-    if(!updatedUser) {
-        throw createError(404, "User not found")
-    };
+    const user = await User.findByIdAndUpdate(userId, { theme }, { new: true });
+    console.log('Updated user theme:', user.theme);
 
     res.status(200).json({
-        message: "Theme updated successfully",
-        theme: updatedUser.theme
-        })
+      message: "Theme updated successfully",
+      user: {
+        id: user._id,
+        theme: user.theme,
+      },
+    });
+  } catch (error) {
+    console.log('Error in updateTheme:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 }
 
 usersRouter.post('/theme', authMiddleware, ctrlWrapper(changeTheme));
 
 //get currentUser
 
-const getCurrentUser = (req, res) => {
-    const user = req.user; // The authenticated user should be set in the req object by the auth middleware
-  
+const getCurrentUser = async (req, res) => {
+  try {
+    const userId = req.user._id; // Ensure user ID is correctly accessed
+    console.log('Request user ID:', userId);
+
+    const user = await User.findById(userId);
+    console.log('Found user:', user);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     res.status(200).json({
       message: "User retrieved successfully",
       user: {
+        id: user._id,
         name: user.name,
         email: user.email,
         theme: user.theme,
         avatarURL: user.avatarURL,
       },
     });
-  };
-
+  } catch (error) {
+    console.log('Error in getUser:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 usersRouter.get('/current', authMiddleware, ctrlWrapper(getCurrentUser));
 
 //changeAvatar
