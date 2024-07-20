@@ -1,0 +1,178 @@
+import express from "express";
+import createError from "../utils/error.js";
+import User, { helpRequestSchema } from "../models/userModel.js";
+import authMiddleware from "../middleware/auth.js";
+import ctrlWrapper from "../utils/ctrlWrapper.js";
+import cloudinary from "../config/cloudinary.js";
+import upload from "../config/multer.js";
+import * as fs from 'node:fs/promises';
+import { updateThemeSchema, updateProfileSchema } from "../models/userModel.js";
+import bcrypt from "bcrypt";
+import transporter from "../config/nodemailer.js";
+
+const usersRouter = express.Router();
+
+//changeTheme
+
+const changeTheme = async (req, res) => {
+
+  const { error } = updateThemeSchema.validate(req.body);
+
+  if (error) {
+    throw createError(400, error.details[0].message);
+  }
+
+    const {theme} = req.body;
+    const userId  = req.user._id;
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {theme},
+        {new:true, runValidators: true}
+    );
+
+    if(!updatedUser) {
+        throw createError(404, "User not found")
+    };
+
+    res.status(200).json({
+        message: "Theme updated successfully",
+        theme: updatedUser.theme
+        })
+}
+
+usersRouter.post('/theme', authMiddleware, ctrlWrapper(changeTheme));
+
+//get currentUser
+
+const getCurrentUser = (req, res) => {
+    const user = req.user; // The authenticated user should be set in the req object by the auth middleware
+  
+    res.status(200).json({
+      message: "User retrieved successfully",
+      user: {
+        name: user.name,
+        email: user.email,
+        theme: user.theme,
+        avatarURL: user.avatarURL,
+      },
+    });
+  };
+
+usersRouter.get('/current', authMiddleware, ctrlWrapper(getCurrentUser));
+
+//changeAvatar
+
+const changeAvatar = async (req, res) => {
+    if (!req.file) {
+        throw createError(400, "No file uploaded");
+      }
+    
+      try {
+        // Upload the file to Cloudinary
+        const result = await cloudinary.v2.uploader.upload(req.file.path, {
+          folder: 'avatars', // Optional: specify a folder for organization
+          transformation: [{ width: 150, height: 150, crop: "limit" }]
+        });
+    
+        const userId = req.user._id;
+        const avatarURL = result.secure_url; // Cloudinary provides a secure URL for the image
+    
+        const user = await User.findByIdAndUpdate(
+          userId,
+          { avatarURL },
+          { new: true, runValidators: true }
+        );
+    
+        if (!user) {
+          throw createError(404, "User not found");
+        }
+    
+        // Delete the file from the local filesystem
+        await fs.unlink(req.file.path);
+    
+        res.status(200).json({
+          message: "Avatar updated successfully",
+          avatarURL: user.avatarURL,
+        });
+      } catch (error) {
+        // Ensure the file is deleted if there is an error
+        if (fs.existsSync(req.file.path)) {
+            await fs.unlink(req.file.path);
+        }
+        throw createError(500, `Cloudinary upload failed: ${error.message}`);
+    }
+  };
+
+usersRouter.patch('/avatar', authMiddleware, upload.single('avatar'), ctrlWrapper(changeAvatar));
+
+//updateProfile
+
+const updateProfile = async (req, res) => {
+  // Validate the request body against the schema
+  const { error } = updateProfileSchema.validate(req.body);
+
+  if (error) {
+    throw createError(400, error.details[0].message);
+  }
+
+  const userId = req.user._id;
+  const updates = req.body;
+
+  // Hash the password before updating if it is being changed
+  if (updates.password) {
+    updates.password = await bcrypt.hash(updates.password, 12);
+  }
+
+  const user = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true });
+
+  if (!user) {
+    throw createError(404, "User not found");
+  }
+
+  res.status(200).json({
+    message: "Profile updated successfully",
+    user: {
+      name: user.name,
+      email: user.email,
+      theme: user.theme,
+      avatarURL: user.avatarURL,
+    },
+  });
+};
+
+usersRouter.patch("/profile", authMiddleware, ctrlWrapper(updateProfile));
+
+//needHelp
+
+const requestHelp = async (req,res) =>{
+  const {error} = helpRequestSchema.validate(req.body);
+  if (error) {
+    throw createError(400, error.details[0].message);
+  }
+
+  const { name, email, message } = req.body;
+
+  // Define the email options
+  const mailOptions = {
+    from: `"Support" <${process.env.EMAIL_USER}>`, // sender address
+    to: process.env.EMAIL_USER, // list of receivers (you can add multiple emails separated by commas)
+    subject: "Help Request", // Subject line
+    text: `Help request from ${name} (${email}):\n\n${message}`, // plain text body
+  };
+
+  try {
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      message: "Help request submitted successfully",
+    });
+  } catch (err) {
+    console.error("Error sending email:", err);
+    throw createError(500, "Error sending email");
+  }
+};
+
+usersRouter.post("/help-request", ctrlWrapper(requestHelp));
+
+export default usersRouter;
