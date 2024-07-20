@@ -1,22 +1,21 @@
-import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors";
-import routes from "./routes/index.js";
+import app from "./app.js";
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4500;
+const DB_URI = process.env.DB_URI;
 
-app.use(cors());
-app.use(express.json());
-
-app.use("/api", routes);
+if (!DB_URI) {
+  console.error('Error: DB_URI is not defined in the environment variables');
+  process.exit(1); // Exit the application with an error code
+}
 
 mongoose
-  .connect(process.env.DB_URI)
+  .connect(DB_URI)
   .then(() =>
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
   )
   .catch((error) => console.log(error.message));
+
