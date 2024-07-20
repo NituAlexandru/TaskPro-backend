@@ -59,6 +59,8 @@ const signUp = async (req, res, next) => {
       refreshToken: refreshToken,
       name: newUser.name,
       email: newUser.email,
+      theme: newUser.theme,
+      avatarURL: newUser.avatarURL,
     },
   });
 };
@@ -104,10 +106,10 @@ const signIn = async (req, res, next) => {
     token,
     refreshToken,
     user: {
-      avatarURL: user.avatarURL,
       name: user.name,
       email: user.email,
       theme: user.theme,
+      avatarURL: user.avatarURL,
     },
   });
 };
