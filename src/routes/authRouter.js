@@ -54,9 +54,9 @@ const signUp = async (req, res, next) => {
 
   res.status(201).json({
     message: "Successful operation",
+    token: token,
+    refreshToken: refreshToken,
     user: {
-      token: token,
-      refreshToken: refreshToken,
       name: newUser.name,
       email: newUser.email,
       theme: newUser.theme,
