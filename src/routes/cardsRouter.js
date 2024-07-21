@@ -14,8 +14,8 @@ export const addCard = async (req, res) => {
   }
   try {
     const userId = req.user.id;
-    const { titleCard, description, priority, deadline, columnId, boardId } = req.body;
-    const newCard = new Card({ titleCard, description, priority, deadline, columnId, owner: userId, boardId });
+    const { titleCard, description, priority, deadline, columnId, boardId, collaborator } = req.body;
+    const newCard = new Card({ titleCard, description, priority, deadline, columnId, owner: userId, boardId, collaborator });
     await newCard.save();
     res.status(201).json(newCard);
   } catch (error) {
@@ -34,10 +34,10 @@ export const updateCard = async (req, res) => {
   }
   try {
     const { cardId } = req.params;
-    const { titleCard, description, priority, deadline } = req.body;
+    const { titleCard, description, priority, deadline, collaborator } = req.body;
     const updatedCard = await Card.findByIdAndUpdate(
       cardId,
-      { titleCard, description, priority, deadline },
+      { titleCard, description, priority, deadline, collaborator },
       { new: true }
     );
     res.json(updatedCard);
@@ -90,7 +90,7 @@ cardsRouter.delete('/:cardId', authMiddleware, deleteCard);
 export const getCardsForColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const cards = await Card.find({ columnId });
+    const cards = await Card.find({ columnId }).populate('collaborator');
     res.json(cards);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -99,13 +99,16 @@ export const getCardsForColumn = async (req, res) => {
 
 cardsRouter.get('/:columnId/cards', authMiddleware, getCardsForColumn);
 
+
+// nu cred ca este utila caci filtrarea se face in getBoardData
+
 // // Filter cards by priority
 
 // export const filterCardsByPriority = async (req, res) => {
 //   try {
 //     const { priority } = req.query;
 //     const userId = req.user.id;
-//     const cards = await Card.find({ owner: userId, priority });
+//     const cards = await Card.find({ owner: userId, priority }).populate('collaborator');
 //     res.json(cards);
 //   } catch (error) {
 //     res.status(500).json({ error: 'Server error' });
