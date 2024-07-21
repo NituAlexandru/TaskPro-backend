@@ -60,10 +60,10 @@ export const signUpSchema = Joi.object({
     'any.required': 'Email is a required field',
     'string.pattern.base': 'Invalid email format',
   }),
-  password: Joi.string().pattern(passwordRegexp).min(6).required().messages({
+  password: Joi.string().pattern(passwordRegexp).min(8).required().messages({
     'string.empty': 'Password must not be empty',
     'any.required': 'Password is a required field',
-    'string.min': 'Password must be at least 6 characters long',
+    'string.min': 'Password must be at least 8 characters long',
     'string.pattern.base': 'Invalid password format',
   }),
 });
@@ -74,10 +74,10 @@ export const signInSchema = Joi.object({
     'any.required': 'Email is a required field',
     'string.pattern.base': 'Invalid email format',
   }),
-  password: Joi.string().pattern(passwordRegexp).min(6).required().messages({
+  password: Joi.string().pattern(passwordRegexp).min(8).required().messages({
     'string.empty': 'Password must not be empty',
     'any.required': 'Password is a required field',
-    'string.min': 'Password must be at least 6 characters long',
+    'string.min': 'Password must be at least 8 characters long',
     'string.pattern.base': 'Invalid password format',
   }),
 });
@@ -105,8 +105,8 @@ export const updateProfileSchema = Joi.object({
   email: Joi.string().pattern(emailRegexp).messages({
     'string.pattern.base': 'Invalid email format',
   }),
-  password: Joi.string().pattern(passwordRegexp).min(6).messages({
-    'string.min': 'Password must be at least 6 characters long',
+  password: Joi.string().pattern(passwordRegexp).min(8).messages({
+    'string.min': 'Password must be at least 8 characters long',
     'string.pattern.base': 'Invalid password format',
   }),
 });

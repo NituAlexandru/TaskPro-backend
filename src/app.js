@@ -45,10 +45,16 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // Swagger 
 // Route file import and use
 import authRouter from './routes/authRouter.js';
 import usersRouter from "./routes/usersRouter.js";
+import cardsRouter from './routes/cardsRouter.js';
+import columnsRouter from "./routes/columnsRouter.js";
+import boardsRouter from "./routes/boardsRouter.js";
 
 app.use('/api/auth', authRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/api/user", usersRouter);
+app.use('/api/boards', boardsRouter);
+app.use('/api/columns', columnsRouter);
+app.use('/api/cards', cardsRouter);
 
 // 404 handler
 app.use(notFoundHandler);
