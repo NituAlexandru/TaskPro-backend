@@ -215,11 +215,12 @@ authRouter.get('/google', ctrlWrapper(googleAuth));
 const {GOOGLE_CLIENT_SECRET, FRONT_URL} = process.env;
 
 const googleRedirect = async (req, res) => {
+  try {
     const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
     const urlParams = queryString.parse(fullUrl.split('?')[1]);
-  
+
     const code = urlParams.code;
-  
+
     const tokenResponse = await axios({
       method: 'post',
       url: `https://oauth2.googleapis.com/token`,
@@ -234,9 +235,9 @@ const googleRedirect = async (req, res) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
-  
+
     const { access_token, id_token } = tokenResponse.data;
-  
+
     const userInfoResponse = await axios({
       method: 'get',
       url: `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
@@ -244,38 +245,39 @@ const googleRedirect = async (req, res) => {
         Authorization: `Bearer ${id_token}`,
       },
     });
-  
+
     const { email, name, picture } = userInfoResponse.data;
-  
-    // Check if user already exists
+
     let user = await User.findOne({ email });
-  
+
     if (!user) {
-      // If user doesn't exist, create a new user
       user = await User.create({
         email,
         name,
         avatarURL: picture,
-        // Generate a random password as it's required in your schema
         password: await bcrypt.hash(Math.random().toString(36).slice(-8), 12),
       });
     }
-  
+
     const newSession = await Session.create({
       uid: user._id,
     });
-  
+
     const payload = {
       id: user._id,
-      sid: newSession.__id,
+      sid: newSession._id,
     };
-  
-    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
-    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
-  
-    // Redirect to front-end with tokens
-    res.redirect(`${FRONT_URL}/auth/callback?token=${token}&refreshToken=${refreshToken}`);
-  };
+
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '20h' });
+    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: '7d' });
+
+    // Redirect to front-end with tokens and session info
+    res.redirect(`${FRONT_URL}/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`);
+  } catch (error) {
+    console.error('Error during Google authentication:', error);
+    res.status(500).send('Internal Server Error');
+  }
+};
 
 authRouter.get('/google-redirect', ctrlWrapper(googleRedirect));
 
