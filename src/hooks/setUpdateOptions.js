@@ -1,5 +1,4 @@
-  export const setUpdateOptions = function(next) {
-    this.options.runValidators = true;
-    this.options.new = true;
-    next();
-  };
+export const setUpdateOptions = function(next) {
+  this.options.runValidators = true;
+  next();
+};

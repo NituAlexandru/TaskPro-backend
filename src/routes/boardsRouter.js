@@ -8,19 +8,22 @@ import Card from '../models/cardModel.js';
 const boardsRouter = express.Router();
 
 // Get all boards for a user
-
-export const getUserBoards = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const boards = await Board.find({ owner: userId }).populate('collaborators');
-        res.json(boards);
-      } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-      }
+const getUserBoards = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log(`Fetching boards for user: ${userId}`);
+    
+    const boards = await Board.find({ owner: userId }).populate('collaborators');
+    
+    console.log(`Found boards: ${boards.length}`);
+    res.json(boards);
+  } catch (error) {
+    console.error('Error fetching boards:', error.message);
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 boardsRouter.get('/', authMiddleware, getUserBoards);
-
 // Get all data for a specific board
 
 export const getBoardData = async (req, res) => {
