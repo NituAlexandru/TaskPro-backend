@@ -53,8 +53,8 @@ app.use('/api/auth', authRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/api/user", usersRouter);
 app.use('/api/boards', boardsRouter);
-app.use('/api/columns', columnsRouter);
-app.use('/api/cards', cardsRouter);
+app.use('/api/boards', columnsRouter);
+app.use('/api/columns', cardsRouter);
 
 // 404 handler
 app.use(notFoundHandler);
