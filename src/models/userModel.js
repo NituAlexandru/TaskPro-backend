@@ -112,10 +112,6 @@ export const updateProfileSchema = Joi.object({
 });
 
 export const helpRequestSchema = Joi.object({
-  name: Joi.string().required().messages({
-    'string.empty': 'Name must not be empty',
-    'any.required': 'Name is a required field',
-  }),
   email: Joi.string().email().required().messages({
     'string.empty': 'Email must not be empty',
     'any.required': 'Email is a required field',

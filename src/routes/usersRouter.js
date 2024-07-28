@@ -1,14 +1,13 @@
 import express from "express";
 import createError from "../utils/error.js";
-import User, { helpRequestSchema } from "../models/userModel.js";
+import User, { helpRequestSchema, updateThemeSchema, updateProfileSchema } from "../models/userModel.js";
 import authMiddleware from "../middleware/auth.js";
 import ctrlWrapper from "../utils/ctrlWrapper.js";
 import cloudinary from "../config/cloudinary.js";
 import upload from "../config/multer.js";
 import * as fs from 'node:fs/promises';
-import { updateThemeSchema, updateProfileSchema } from "../models/userModel.js";
 import bcrypt from "bcrypt";
-import transporter from "../config/nodemailer.js";
+import nodemailer from 'nodemailer';
 
 const usersRouter = express.Router();
 
@@ -159,29 +158,34 @@ usersRouter.patch("/profile", authMiddleware, ctrlWrapper(updateProfile));
 
 //needHelp
 
-const requestHelp = async (req,res) =>{
-  const {error} = helpRequestSchema.validate(req.body);
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // e.g., 'gmail'
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+const requestHelp = async (req, res) => {
+  const { error } = helpRequestSchema.validate(req.body);
   if (error) {
     throw createError(400, error.details[0].message);
   }
 
-  const { name, email, message } = req.body;
+  const { email, message } = req.body;
 
   // Define the email options
   const mailOptions = {
     from: `"Support" <${process.env.EMAIL_USER}>`, // sender address
     to: process.env.EMAIL_USER, // list of receivers (you can add multiple emails separated by commas)
     subject: "Help Request", // Subject line
-    text: `Help request from ${name} (${email}):\n\n${message}`, // plain text body
+    text: `Help request from (${email}):\n\n${message}`, // plain text body
   };
 
   try {
     // Send the email
     await transporter.sendMail(mailOptions);
-
-    res.status(200).json({
-      message: "Help request submitted successfully",
-    });
+    res.status(200).json({ message: "Help request submitted successfully" });
   } catch (err) {
     console.error("Error sending email:", err);
     throw createError(500, "Error sending email");
@@ -192,21 +196,21 @@ usersRouter.post("/help-request", ctrlWrapper(requestHelp));
 
 // Get user by name
 
-usersRouter.get('/', async (req, res) => {
-  const { name } = req.query;
-  if (!name) {
-    return res.status(400).json({ error: 'Name is required' });
-  }
+// usersRouter.get('/', async (req, res) => {
+//   const { name } = req.query;
+//   if (!name) {
+//     return res.status(400).json({ error: 'Name is required' });
+//   }
   
-  try {
-    const user = await User.findOne({ name });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+//   try {
+//     const user = await User.findOne({ name });
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+//     res.json(user);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
 
 export default usersRouter;
