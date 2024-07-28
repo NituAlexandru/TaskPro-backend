@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
-import { handleSaveError } from '../hooks/handleSaveErrors.js';
-import { setUpdateOptions } from '../hooks/setUpdateOptions.js';
-import Joi from 'joi';
+import mongoose from "mongoose";
+import { handleSaveError } from "../hooks/handleSaveErrors.js";
+import { setUpdateOptions } from "../hooks/setUpdateOptions.js";
+import Joi from "joi";
 
 const priorityCard = ["without priority", "low", "medium", "high"];
 
@@ -18,6 +18,10 @@ export const cardSchema = new mongoose.Schema(
       type: String,
       enum: priorityCard,
       default: "without",
+    },
+    priorityColor: {
+      type: String,
+      required: true,
     },
     deadline: {
       type: Date,
@@ -39,7 +43,7 @@ export const cardSchema = new mongoose.Schema(
     },
     collaborator: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'user',
+      ref: "user",
     },
   },
   { versionKey: false, timestamps: true }
@@ -50,24 +54,30 @@ cardSchema.pre("findOneAndUpdate", setUpdateOptions);
 
 export const cardAddSchema = Joi.object({
   titleCard: Joi.string().required(),
-  description: Joi.string().allow(''),
- priority: Joi.string().valid(...priorityCard),
+  description: Joi.string().allow(""),
+  priority: Joi.string().valid(...priorityCard),
+  priorityColor: Joi.string().required(),
   deadline: Joi.date().iso(),
   columnId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .required(),
-  collaborator: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  collaborator: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .optional(),
 }).messages({
-  'string.pattern.base': `Column not valid`,
-  'any.required': `Missing field {#label}`,
+  "string.pattern.base": `Column not valid`,
+  "any.required": `Missing field {#label}`,
 });
 
 export const cardUpdateSchema = Joi.object({
   titleCard: Joi.string(),
   description: Joi.string().allow(""),
-  priorityr: Joi.string().valid(...priorityCard),
+  priority: Joi.string().valid(...priorityCard),
+  priorityColor: Joi.string(),
   deadline: Joi.date().iso(),
-  collaborator: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  collaborator: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .optional(),
 });
 
 export const cardPatchSchema = Joi.object({
