@@ -8,6 +8,7 @@ import Card from '../models/cardModel.js';
 const boardsRouter = express.Router();
 
 // Get all boards for a user
+
 const getUserBoards = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -24,6 +25,7 @@ const getUserBoards = async (req, res) => {
 };
 
 boardsRouter.get('/', authMiddleware, getUserBoards);
+
 // Get all data for a specific board
 
 export const getBoardData = async (req, res) => {

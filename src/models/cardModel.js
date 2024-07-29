@@ -3,7 +3,7 @@ import { handleSaveError } from "../hooks/handleSaveErrors.js";
 import { setUpdateOptions } from "../hooks/setUpdateOptions.js";
 import Joi from "joi";
 
-const priorityCard = ["without priority", "low", "medium", "high"];
+const priorityCard = ["without", "low", "medium", "high"];
 
 export const cardSchema = new mongoose.Schema(
   {

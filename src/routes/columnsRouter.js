@@ -4,7 +4,7 @@ import Board from '../models/boardModel.js';
 import { schemaAddColumn, schemaUpdateColumn } from '../models/columnModel.js';
 import authMiddleware from '../middleware/auth.js';
 
-const columnsRouter = express.Router();
+const columnsRouter = express.Router({ mergeParams: true }); // Enable merging of params
 
 // Add a new column
 
@@ -15,7 +15,8 @@ export const addColumn = async (req, res) => {
   }
   try {
     const userId = req.user.id;
-    const { titleColumn, boardId } = req.body;
+    const { titleColumn } = req.body;
+    const { boardId } = req.params; // Get boardId from params
     const board = await Board.findById(boardId);
 
     if (!board) {
@@ -29,8 +30,6 @@ export const addColumn = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-
-columnsRouter.post('/:boardId/columns', authMiddleware, addColumn);
 
 // Update a column
 
@@ -53,8 +52,6 @@ export const updateColumn = async (req, res) => {
   }
 };
 
-columnsRouter.put('/:boardId/columns/:columnId', authMiddleware, updateColumn);
-
 // Delete a column
 
 export const deleteColumn = async (req, res) => {
@@ -66,8 +63,6 @@ export const deleteColumn = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-
-columnsRouter.delete('/:boardId/columns/:columnId', authMiddleware, deleteColumn);
 
 // Get all columns for a board
 
@@ -81,6 +76,9 @@ export const getColumnsForBoard = async (req, res) => {
   }
 };
 
-columnsRouter.get('/:boardId/columns', authMiddleware, getColumnsForBoard);
+columnsRouter.post('/', authMiddleware, addColumn); // Fix route
+columnsRouter.put('/:columnId', authMiddleware, updateColumn); // Fix route
+columnsRouter.delete('/:columnId', authMiddleware, deleteColumn); // Fix route
+columnsRouter.get('/', authMiddleware, getColumnsForBoard); // Fix route
 
 export default columnsRouter;

@@ -53,8 +53,8 @@ app.use('/api/auth', authRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use("/api/user", usersRouter);
 app.use('/api/boards', boardsRouter);
-app.use('/api/boards', columnsRouter);
-app.use('/api/columns', cardsRouter);
+app.use('/api/boards/:boardId/columns', columnsRouter); // Nested columns routes
+app.use('/api/columns/:columnId/cards', cardsRouter); // Nested cards routes
 
 // 404 handler
 app.use(notFoundHandler);
