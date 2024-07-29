@@ -78,6 +78,7 @@ const getCardsForColumn = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 export const moveCard = async (req, res) => {
   const { error } = cardPatchSchema.validate(req.body);
   if (error) {
@@ -85,10 +86,10 @@ export const moveCard = async (req, res) => {
   }
   try {
     const { cardId } = req.params;
-    const { columnId } = req.body;
+    const { newColumnId } = req.body;
     const updatedCard = await Card.findByIdAndUpdate(
       cardId,
-      { columnId },
+      { columnId: newColumnId },
       { new: true }
     );
     res.json(updatedCard);
@@ -97,10 +98,10 @@ export const moveCard = async (req, res) => {
   }
 };
 
-cardsRouter.patch("/:cardId/move", authMiddleware, moveCard);
-cardsRouter.post('/', authMiddleware, addCard);
-cardsRouter.put('/:cardId', authMiddleware, updateCard);
-cardsRouter.delete('/:cardId', authMiddleware, deleteCard);
-cardsRouter.get('/', authMiddleware, getCardsForColumn);
+cardsRouter.patch("/:cardId/move", authMiddleware, moveCard); // Endpoint to move a card to a new column
+cardsRouter.post('/', authMiddleware, addCard); // Add a new card
+cardsRouter.put('/:cardId', authMiddleware, updateCard); // Update a card
+cardsRouter.delete('/:cardId', authMiddleware, deleteCard); // Delete a card
+cardsRouter.get('/', authMiddleware, getCardsForColumn); // Get all cards in a column
 
 export default cardsRouter;
