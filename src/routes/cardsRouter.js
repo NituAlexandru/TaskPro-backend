@@ -79,19 +79,23 @@ const getCardsForColumn = async (req, res) => {
   }
 };
 
+// controller or route handler
 export const moveCard = async (req, res) => {
-  const { error } = cardPatchSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
-  }
+  const { cardId } = req.params;
+  const { newColumnId } = req.body;
+
   try {
-    const { cardId } = req.params;
-    const { newColumnId } = req.body;
+    // Update the card to move it to the new column
     const updatedCard = await Card.findByIdAndUpdate(
       cardId,
       { columnId: newColumnId },
       { new: true }
     );
+
+    if (!updatedCard) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
     res.json(updatedCard);
   } catch (error) {
     res.status(500).json({ error: "Server error" });
