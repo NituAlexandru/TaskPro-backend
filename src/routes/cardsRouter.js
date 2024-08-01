@@ -11,15 +11,18 @@ const addCard = async (req, res) => {
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
+  
   try {
     const userId = req.user.id;
-    const { titleCard, description, priority, priorityColor, deadline, collaborator } = req.body;
+    const { titleCard, description, priority, priorityColor, deadline, collaborators } = req.body;
     const columnId = req.params.columnId;
     const column = await Column.findById(columnId);
 
     if (!column) {
       return res.status(404).json({ error: 'Column not found' });
     }
+
+    console.log("Received Collaborators: ", collaborators); // Debugging log
 
     const newCard = new Card({
       titleCard,
@@ -30,8 +33,9 @@ const addCard = async (req, res) => {
       columnId,
       owner: userId,
       boardId: column.boardId,
-      collaborator,
+      collaborators,
     });
+
     await newCard.save();
     res.status(201).json(newCard);
   } catch (error) {

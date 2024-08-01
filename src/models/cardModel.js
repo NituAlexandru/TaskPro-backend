@@ -41,10 +41,12 @@ export const cardSchema = new mongoose.Schema(
       ref: "board",
       required: true,
     },
-    collaborator: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-    },
+    collaborators: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+    ],
   },
   { versionKey: false, timestamps: true }
 );
@@ -61,9 +63,9 @@ export const cardAddSchema = Joi.object({
   columnId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .required(),
-  collaborator: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .optional(),
+  collaborators: Joi.array().items(
+    Joi.string().regex(/^[0-9a-fA-F]{24}$/)
+  ).optional(),
 }).messages({
   "string.pattern.base": `Column not valid`,
   "any.required": `Missing field {#label}`,
@@ -75,9 +77,9 @@ export const cardUpdateSchema = Joi.object({
   priority: Joi.string().valid(...priorityCard),
   priorityColor: Joi.string(),
   deadline: Joi.date().iso(),
-  collaborator: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .optional(),
+  collaborators: Joi.array().items(
+    Joi.string().regex(/^[0-9a-fA-F]{24}$/)
+  ).optional(),
 });
 
 export const cardPatchSchema = Joi.object({
