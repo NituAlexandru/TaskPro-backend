@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import createError from "../utils/error.js";
 import User, { helpRequestSchema, updateThemeSchema, updateProfileSchema } from "../models/userModel.js";
 import authMiddleware from "../middleware/auth.js";
@@ -211,10 +212,18 @@ usersRouter.get('/details-by-email/:email', async (req, res) => {
 
 usersRouter.post('/get-users-by-ids', async (req, res) => {
   const { ids } = req.body;
+
   try {
-    const users = await User.find({ _id: { $in: ids } });
+    // Filter out invalid IDs
+    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length !== ids.length) {
+      return res.status(400).json({ message: 'Some IDs are invalid' });
+    }
+
+    const users = await User.find({ _id: { $in: validIds } });
     res.json(users);
   } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ message: 'Server Error', error });
   }
 });

@@ -27,39 +27,41 @@ const getUserBoards = async (req, res) => {
 boardsRouter.get('/', authMiddleware, getUserBoards);
 
 // Get all data for a specific board
-
 export const getBoardData = async (req, res) => {
-    try {
-        const { boardId } = req.params;
-        const { priority } = req.query; // Get priority from query parameters
-        const board = await Board.findById(boardId).populate('collaborators');
-        if (!board) {
-          return res.status(404).json({ error: 'Board not found' });
-        }
-    
-        // Get all columns for the board
-        const columns = await Column.find({ boardId });
-        
-        // Get all cards for each column with optional priority filter
-        const columnsWithCards = await Promise.all(columns.map(async (column) => {
-          const filter = { columnId: column._id };
-          if (priority) {
-            filter.priority = priority;
-          }
-          const cards = await Card.find(filter).populate('collaborator');
-          return {
-            ...column.toObject(),
-            cards,
-          };
-        }));
-    
-        res.json({
-          ...board.toObject(),
-          columns: columnsWithCards,
-        });
-      } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+  try {
+    const { boardId } = req.params;
+    const { priority } = req.query; // Get priority from query parameters
+
+    // Find the board and populate collaborators
+    const board = await Board.findById(boardId).populate('collaborators', 'name avatarURL');
+    if (!board) {
+      return res.status(404).json({ error: 'Board not found' });
+    }
+
+    // Get all columns for the board
+    const columns = await Column.find({ boardId });
+
+    // Get all cards for each column with optional priority filter
+    const columnsWithCards = await Promise.all(columns.map(async (column) => {
+      const filter = { columnId: column._id };
+      if (priority) {
+        filter.priority = priority;
       }
+      const cards = await Card.find(filter).populate('collaborators', 'name avatarURL' );
+      return {
+        ...column.toObject(),
+        cards,
+      };
+    }));
+
+    res.json({
+      ...board.toObject(),
+      columns: columnsWithCards,
+    });
+  } catch (error) {
+    console.error('Error fetching board data:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 boardsRouter.get('/:boardId', authMiddleware, getBoardData);

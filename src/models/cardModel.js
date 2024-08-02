@@ -41,12 +41,21 @@ export const cardSchema = new mongoose.Schema(
       ref: "board",
       required: true,
     },
-    collaborators: [
-      {
+    collaborators: [{
+      userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
+        ref: 'User',
+        required: true,
       },
-    ],
+      name: {
+        type: String,
+        required: true,
+      },
+      avatarURL: {
+        type: String,
+        required: true,
+      }
+    }],
   },
   { versionKey: false, timestamps: true }
 );
@@ -63,9 +72,13 @@ export const cardAddSchema = Joi.object({
   columnId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .required(),
-  collaborators: Joi.array().items(
-    Joi.string().regex(/^[0-9a-fA-F]{24}$/)
-  ).optional(),
+    collaborators: Joi.array().items(
+      Joi.object({
+        userId: Joi.string().required(),
+        name: Joi.string().required(),
+        avatarURL: Joi.string().required()
+      })
+    ).optional(),
 }).messages({
   "string.pattern.base": `Column not valid`,
   "any.required": `Missing field {#label}`,
