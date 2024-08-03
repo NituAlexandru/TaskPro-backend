@@ -85,15 +85,22 @@ export const cardAddSchema = Joi.object({
 });
 
 export const cardUpdateSchema = Joi.object({
-  titleCard: Joi.string(),
+  titleCard: Joi.string().required(),
   description: Joi.string().allow(""),
   priority: Joi.string().valid(...priorityCard),
-  priorityColor: Joi.string(),
+  priorityColor: Joi.string().required(),
   deadline: Joi.date().iso(),
-  collaborators: Joi.array().items(
-    Joi.string().regex(/^[0-9a-fA-F]{24}$/)
-  ).optional(),
-});
+  columnId: Joi.string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .required(),
+    collaborators: Joi.array().items(
+      Joi.object({
+        userId: Joi.string().required(),
+        name: Joi.string().required(),
+        avatarURL: Joi.string().required()
+      })
+    ).optional(),
+})
 
 export const cardPatchSchema = Joi.object({
   columnId: Joi.string()

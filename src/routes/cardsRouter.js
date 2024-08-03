@@ -73,11 +73,24 @@ export const deleteCard = async (req, res) => {
   }
 };
 
-const getCardsForColumn = async (req, res) => {
+ export const getCardsForColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
     const cards = await Card.find({ columnId });
     res.json(cards);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const getCardData = async (req, res) => {
+  try {
+    const { cardId } = req.params;
+    const card = await Card.findById(cardId);
+    if (!card) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+    res.json(card);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -111,5 +124,7 @@ cardsRouter.post('/', authMiddleware, addCard); // Add a new card
 cardsRouter.put('/:cardId', authMiddleware, updateCard); // Update a card
 cardsRouter.delete('/:cardId', authMiddleware, deleteCard); // Delete a card
 cardsRouter.get('/', authMiddleware, getCardsForColumn); // Get all cards in a column
+// Get card data
+cardsRouter.get('/:cardId', authMiddleware, getCardData);
 
 export default cardsRouter;
