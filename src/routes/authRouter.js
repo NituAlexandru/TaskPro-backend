@@ -88,68 +88,50 @@ const authRouter = express.Router();
  *         description: Conflict - email already exists
  */
 const signUp = async (req, res, next) => {
-  try {
-    const { error } = signUpSchema.validate(req.body);
+  const { error } = signUpSchema.validate(req.body);
 
-    if (error) {
-      console.error("Validation error:", error.details[0].message);
-      throw createError(400, error.details[0].message);
-    }
-
-    const { name, email, password } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (user) {
-      console.error("Email already exists:", email);
-      throw createError(409, "Provided email already exists");
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const newUser = await User.create({
-      ...req.body,
-      password: hashedPassword,
-    });
-
-    const newSession = await Session.create({
-      uid: newUser._id,
-    });
-
-    const payload = {
-      id: newUser._id,
-      sid: newSession._id,
-    };
-
-    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
-    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
-
-    console.log("User created and tokens generated:", {
-      token,
-      refreshToken,
-    });
-
-    // Redirecționează către pagina de login după înregistrare
-    
-    res.redirect(`${FRONT_URL}#/login?message=successful_registration`);
-  } catch (error) {
-    console.error("Error during signup:", error);
-    next(error);
+  if (error) {
+    throw createError(400, error.details[0].message);
   }
 
-  // # se adauga doar pt Github pages casa functioneze HashRouter
+  const { name, email, password } = req.body;
 
-  // res.status(201).json({
-  //   message: "Successful operation",
-  //   token,
-  //   refreshToken,
-  //   user: {
-  //     name: newUser.name,
-  //     email: newUser.email,
-  //     theme: newUser.theme,
-  //     avatarURL: newUser.avatarURL,
-  //   },
-  // });
+  const user = await User.findOne({ email });
+
+  if (user) {
+    throw createError(409, "Provided email already exists");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  const newUser = await User.create({
+    ...req.body,
+    password: hashedPassword,
+  });
+
+  const newSession = await Session.create({
+    uid: newUser._id,
+  });
+
+  const payload = {
+    id: newUser._id,
+    sid: newSession._id,
+  };
+
+  const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
+  const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
+
+  res.status(201).json({
+    message: "Successful operation",
+    token,
+    refreshToken,
+    user: {
+      name: newUser.name,
+      email: newUser.email,
+      theme: newUser.theme,
+      avatarURL: newUser.avatarURL,
+    },
+  });
 };
 
 authRouter.post("/register", ctrlWrapper(signUp));
