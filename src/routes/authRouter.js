@@ -121,17 +121,21 @@ const signUp = async (req, res, next) => {
   const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
   const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
 
-  res.status(201).json({
-    message: "Successful operation",
-    token,
-    refreshToken,
-    user: {
-      name: newUser.name,
-      email: newUser.email,
-      theme: newUser.theme,
-      avatarURL: newUser.avatarURL,
-    },
-  });
+  res.redirect(
+    `${FRONT_URL}#/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`
+  );
+
+  // res.status(201).json({
+  //   message: "Successful operation",
+  //   token,
+  //   refreshToken,
+  //   user: {
+  //     name: newUser.name,
+  //     email: newUser.email,
+  //     theme: newUser.theme,
+  //     avatarURL: newUser.avatarURL,
+  //   },
+  // });
 };
 
 authRouter.post("/register", ctrlWrapper(signUp));
