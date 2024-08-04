@@ -1,18 +1,28 @@
-import express from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-import createError from '../utils/error.js';
-import User from '../models/userModel.js';
-import Session from '../models/sessionModel.js';
-import ctrlWrapper from '../utils/ctrlWrapper.js';
-import queryString from 'query-string';
-import axios from 'axios';
-import { signUpSchema, signInSchema, refreshTokenSchema } from '../models/userModel.js';
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import createError from "../utils/error.js";
+import User from "../models/userModel.js";
+import Session from "../models/sessionModel.js";
+import ctrlWrapper from "../utils/ctrlWrapper.js";
+import queryString from "query-string";
+import axios from "axios";
+import {
+  signUpSchema,
+  signInSchema,
+  refreshTokenSchema,
+} from "../models/userModel.js";
 
 dotenv.config();
 
-const { SECRET_KEY, GOOGLE_CLIENT_ID, BACKEND_URL, GOOGLE_CLIENT_SECRET, FRONT_URL } = process.env;
+const {
+  SECRET_KEY,
+  GOOGLE_CLIENT_ID,
+  BACKEND_URL,
+  GOOGLE_CLIENT_SECRET,
+  FRONT_URL,
+} = process.env;
 
 const authRouter = express.Router();
 
@@ -124,7 +134,7 @@ const signUp = async (req, res, next) => {
   });
 };
 
-authRouter.post('/register', ctrlWrapper(signUp));
+authRouter.post("/register", ctrlWrapper(signUp));
 
 /**
  * @swagger
@@ -197,7 +207,7 @@ const signIn = async (req, res, next) => {
   });
 };
 
-authRouter.post('/login', ctrlWrapper(signIn));
+authRouter.post("/login", ctrlWrapper(signIn));
 
 /**
  * @swagger
@@ -260,7 +270,7 @@ const refreshToken = async (req, res) => {
   }
 };
 
-authRouter.post('/refresh-token', ctrlWrapper(refreshToken));
+authRouter.post("/refresh-token", ctrlWrapper(refreshToken));
 
 /**
  * @swagger
@@ -306,7 +316,7 @@ const logOut = async (req, res) => {
   }
 };
 
-authRouter.post('/logout', ctrlWrapper(logOut));
+authRouter.post("/logout", ctrlWrapper(logOut));
 
 /**
  * @swagger
@@ -324,7 +334,7 @@ const googleAuth = (req, res) => {
     redirect_uri: `${BACKEND_URL}/api/auth/google-redirect`,
     scope: [
       "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile"
+      "https://www.googleapis.com/auth/userinfo.profile",
     ].join(" "),
     response_type: "code",
     access_type: "offline",
@@ -336,7 +346,7 @@ const googleAuth = (req, res) => {
   );
 };
 
-authRouter.get('/google', ctrlWrapper(googleAuth));
+authRouter.get("/google", ctrlWrapper(googleAuth));
 
 /**
  * @swagger
@@ -352,30 +362,30 @@ authRouter.get('/google', ctrlWrapper(googleAuth));
  */
 const googleRedirect = async (req, res) => {
   try {
-    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-    const urlParams = queryString.parse(fullUrl.split('?')[1]);
+    const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+    const urlParams = queryString.parse(fullUrl.split("?")[1]);
 
     const code = urlParams.code;
 
     const tokenResponse = await axios({
-      method: 'post',
+      method: "post",
       url: `https://oauth2.googleapis.com/token`,
       data: queryString.stringify({
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
         redirect_uri: `${BACKEND_URL}/api/auth/google-redirect`,
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
         code,
       }),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
     });
 
     const { access_token, id_token } = tokenResponse.data;
 
     const userInfoResponse = await axios({
-      method: 'get',
+      method: "get",
       url: `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
       headers: {
         Authorization: `Bearer ${id_token}`,
@@ -404,17 +414,20 @@ const googleRedirect = async (req, res) => {
       sid: newSession._id,
     };
 
-    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '20h' });
-    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: '7d' });
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
+    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
 
     // Redirect to front-end with tokens and session info
-    res.redirect(`${FRONT_URL}/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`);
+    res.redirect(
+      `${FRONT_URL}#/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`
+    );
+    // # - se adauga doar pentru github pages ca sa functioneze HashRouter.
   } catch (error) {
-    console.error('Error during Google authentication:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Error during Google authentication:", error);
+    res.status(500).send("Internal Server Error");
   }
 };
 
-authRouter.get('/google-redirect', ctrlWrapper(googleRedirect));
+authRouter.get("/google-redirect", ctrlWrapper(googleRedirect));
 
 export default authRouter;
