@@ -88,42 +88,56 @@ const authRouter = express.Router();
  *         description: Conflict - email already exists
  */
 const signUp = async (req, res, next) => {
-  const { error } = signUpSchema.validate(req.body);
+  try {
+    const { error } = signUpSchema.validate(req.body);
 
-  if (error) {
-    throw createError(400, error.details[0].message);
+    if (error) {
+      console.error("Validation error:", error.details[0].message);
+      throw createError(400, error.details[0].message);
+    }
+
+    const { name, email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (user) {
+      console.error("Email already exists:", email);
+      throw createError(409, "Provided email already exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = await User.create({
+      ...req.body,
+      password: hashedPassword,
+    });
+
+    const newSession = await Session.create({
+      uid: newUser._id,
+    });
+
+    const payload = {
+      id: newUser._id,
+      sid: newSession._id,
+    };
+
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
+    const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
+
+    console.log("User created and tokens generated:", {
+      token,
+      refreshToken,
+    });
+
+    // Redirecționează către pagina de login după înregistrare
+    
+    res.redirect(`${FRONT_URL}#/login?message=successful_registration`);
+  } catch (error) {
+    console.error("Error during signup:", error);
+    next(error);
   }
 
-  const { name, email, password } = req.body;
-
-  const user = await User.findOne({ email });
-
-  if (user) {
-    throw createError(409, "Provided email already exists");
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 12);
-
-  const newUser = await User.create({
-    ...req.body,
-    password: hashedPassword,
-  });
-
-  const newSession = await Session.create({
-    uid: newUser._id,
-  });
-
-  const payload = {
-    id: newUser._id,
-    sid: newSession._id,
-  };
-
-  const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
-  const refreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
-
-  res.redirect(
-    `${FRONT_URL}#/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`
-  );
+  // # se adauga doar pt Github pages casa functioneze HashRouter
 
   // res.status(201).json({
   //   message: "Successful operation",
