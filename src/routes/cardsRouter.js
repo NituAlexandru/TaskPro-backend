@@ -6,12 +6,62 @@ import authMiddleware from '../middleware/auth.js';
 
 const cardsRouter = express.Router({ mergeParams: true }); // Ensure mergeParams is true
 
+/**
+ * @swagger
+ * tags:
+ *   name: Cards
+ *   description: API for managing cards
+ */
+
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards:
+ *   post:
+ *     summary: Add a new card
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: columnId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the column
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleCard:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               priorityColor:
+ *                 type: string
+ *               deadline:
+ *                 type: string
+ *               collaborators:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Card created successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Column not found
+ *       500:
+ *         description: Server error
+ */
 const addCard = async (req, res) => {
   const { error } = cardAddSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
-  
+
   try {
     const userId = req.user.id;
     const { titleCard, description, priority, priorityColor, deadline, collaborators } = req.body;
@@ -44,6 +94,47 @@ const addCard = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards/{cardId}:
+ *   put:
+ *     summary: Update a card
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the card to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleCard:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               priorityColor:
+ *                 type: string
+ *               deadline:
+ *                 type: string
+ *               collaborators:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Card updated successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
 const updateCard = async (req, res) => {
   const { error } = cardUpdateSchema.validate(req.body);
   if (error) {
@@ -58,6 +149,27 @@ const updateCard = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards/{cardId}:
+ *   delete:
+ *     summary: Delete a card
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the card to delete
+ *     responses:
+ *       200:
+ *         description: Card deleted successfully
+ *       404:
+ *         description: Card not found
+ *       500:
+ *         description: Server error
+ */
 export const deleteCard = async (req, res) => {
   try {
     const { columnId, cardId } = req.params;
@@ -73,7 +185,26 @@ export const deleteCard = async (req, res) => {
   }
 };
 
- export const getCardsForColumn = async (req, res) => {
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards:
+ *   get:
+ *     summary: Get all cards in a column
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: columnId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the column
+ *     responses:
+ *       200:
+ *         description: List of cards
+ *       500:
+ *         description: Server error
+ */
+export const getCardsForColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
     const cards = await Card.find({ columnId });
@@ -83,6 +214,27 @@ export const deleteCard = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards/{cardId}:
+ *   get:
+ *     summary: Get data for a specific card
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the card
+ *     responses:
+ *       200:
+ *         description: Card data
+ *       404:
+ *         description: Card not found
+ *       500:
+ *         description: Server error
+ */
 export const getCardData = async (req, res) => {
   try {
     const { cardId } = req.params;
@@ -96,7 +248,36 @@ export const getCardData = async (req, res) => {
   }
 };
 
-// controller or route handler
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move:
+ *   patch:
+ *     summary: Move a card to a new column
+ *     tags: [Cards]
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the card to move
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               newColumnId:
+ *                 type: string
+ *                 description: The ID of the new column
+ *     responses:
+ *       200:
+ *         description: Card moved successfully
+ *       404:
+ *         description: Card not found
+ *       500:
+ *         description: Server error
+ */
 export const moveCard = async (req, res) => {
   const { cardId } = req.params;
   const { newColumnId } = req.body;
@@ -124,7 +305,7 @@ cardsRouter.post('/', authMiddleware, addCard); // Add a new card
 cardsRouter.put('/:cardId', authMiddleware, updateCard); // Update a card
 cardsRouter.delete('/:cardId', authMiddleware, deleteCard); // Delete a card
 cardsRouter.get('/', authMiddleware, getCardsForColumn); // Get all cards in a column
-// Get card data
-cardsRouter.get('/:cardId', authMiddleware, getCardData);
+cardsRouter.get('/:cardId', authMiddleware, getCardData); // Get card data
 
 export default cardsRouter;
+

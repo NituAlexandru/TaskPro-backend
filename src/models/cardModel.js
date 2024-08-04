@@ -3,8 +3,10 @@ import { handleSaveError } from "../hooks/handleSaveErrors.js";
 import { setUpdateOptions } from "../hooks/setUpdateOptions.js";
 import Joi from "joi";
 
-const priorityCard = ["without", "low", "medium", "high"];
+// Constants
+const PRIORITY_CARD = ["without", "low", "medium", "high"];
 
+// Mongoose Schema
 export const cardSchema = new mongoose.Schema(
   {
     titleCard: {
@@ -16,7 +18,7 @@ export const cardSchema = new mongoose.Schema(
     },
     priority: {
       type: String,
-      enum: priorityCard,
+      enum: PRIORITY_CARD,
       default: "without",
     },
     priorityColor: {
@@ -41,44 +43,48 @@ export const cardSchema = new mongoose.Schema(
       ref: "board",
       required: true,
     },
-    collaborators: [{
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-      },
-      name: {
-        type: String,
-        required: true,
-      },
-      avatarURL: {
-        type: String,
-        required: true,
+    collaborators: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        avatarURL: {
+          type: String,
+          required: true,
+        }
       }
-    }],
+    ],
   },
   { versionKey: false, timestamps: true }
 );
 
+// Middleware
 cardSchema.post("save", handleSaveError);
 cardSchema.pre("findOneAndUpdate", setUpdateOptions);
 
+// Joi Validation Schemas
 export const cardAddSchema = Joi.object({
   titleCard: Joi.string().required(),
   description: Joi.string().allow(""),
-  priority: Joi.string().valid(...priorityCard),
+  priority: Joi.string().valid(...PRIORITY_CARD),
   priorityColor: Joi.string().required(),
   deadline: Joi.date().iso(),
   columnId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .required(),
-    collaborators: Joi.array().items(
-      Joi.object({
-        userId: Joi.string().required(),
-        name: Joi.string().required(),
-        avatarURL: Joi.string().required()
-      })
-    ).optional(),
+  collaborators: Joi.array().items(
+    Joi.object({
+      userId: Joi.string().required(),
+      name: Joi.string().required(),
+      avatarURL: Joi.string().required()
+    })
+  ).optional(),
 }).messages({
   "string.pattern.base": `Column not valid`,
   "any.required": `Missing field {#label}`,
@@ -87,20 +93,20 @@ export const cardAddSchema = Joi.object({
 export const cardUpdateSchema = Joi.object({
   titleCard: Joi.string().required(),
   description: Joi.string().allow(""),
-  priority: Joi.string().valid(...priorityCard),
+  priority: Joi.string().valid(...PRIORITY_CARD),
   priorityColor: Joi.string().required(),
   deadline: Joi.date().iso(),
   columnId: Joi.string()
     .regex(/^[0-9a-fA-F]{24}$/)
     .required(),
-    collaborators: Joi.array().items(
-      Joi.object({
-        userId: Joi.string().required(),
-        name: Joi.string().required(),
-        avatarURL: Joi.string().required()
-      })
-    ).optional(),
-})
+  collaborators: Joi.array().items(
+    Joi.object({
+      userId: Joi.string().required(),
+      name: Joi.string().required(),
+      avatarURL: Joi.string().required()
+    })
+  ).optional(),
+});
 
 export const cardPatchSchema = Joi.object({
   columnId: Joi.string()
@@ -111,6 +117,8 @@ export const cardPatchSchema = Joi.object({
   "any.required": `Missing field {#label}`,
 });
 
-const Card = mongoose.model("card", cardSchema);
+// Mongoose Model
+const Card = mongoose.model("Card", cardSchema);
 
 export default Card;
+

@@ -6,7 +6,44 @@ import authMiddleware from '../middleware/auth.js';
 
 const columnsRouter = express.Router({ mergeParams: true }); // Enable merging of params
 
-// Add a new column
+/**
+ * @swagger
+ * tags:
+ *   name: Columns
+ *   description: API for managing columns
+ */
+
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns:
+ *   post:
+ *     summary: Add a new column
+ *     tags: [Columns]
+ *     parameters:
+ *       - in: path
+ *         name: boardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the board
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleColumn:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Column created successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Board not found
+ *       500:
+ *         description: Server error
+ */
 export const addColumn = async (req, res) => {
   const { error } = schemaAddColumn.validate(req.body);
   if (error) {
@@ -30,7 +67,35 @@ export const addColumn = async (req, res) => {
   }
 };
 
-// Update a column
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}:
+ *   put:
+ *     summary: Update a column
+ *     tags: [Columns]
+ *     parameters:
+ *       - in: path
+ *         name: columnId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the column to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleColumn:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Column updated successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
 export const updateColumn = async (req, res) => {
   const { error } = schemaUpdateColumn.validate(req.body);
   if (error) {
@@ -50,7 +115,25 @@ export const updateColumn = async (req, res) => {
   }
 };
 
-// Delete a column
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns/{columnId}:
+ *   delete:
+ *     summary: Delete a column
+ *     tags: [Columns]
+ *     parameters:
+ *       - in: path
+ *         name: columnId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the column to delete
+ *     responses:
+ *       200:
+ *         description: Column deleted successfully
+ *       500:
+ *         description: Server error
+ */
 export const deleteColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
@@ -61,7 +144,25 @@ export const deleteColumn = async (req, res) => {
   }
 };
 
-// Get all columns for a board
+/**
+ * @swagger
+ * /api/boards/{boardId}/columns:
+ *   get:
+ *     summary: Get all columns for a board
+ *     tags: [Columns]
+ *     parameters:
+ *       - in: path
+ *         name: boardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the board
+ *     responses:
+ *       200:
+ *         description: List of columns
+ *       500:
+ *         description: Server error
+ */
 export const getColumnsForBoard = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -78,3 +179,4 @@ columnsRouter.delete('/:columnId', authMiddleware, deleteColumn); // Delete a co
 columnsRouter.get('/', authMiddleware, getColumnsForBoard); // Get all columns for a board
 
 export default columnsRouter;
+

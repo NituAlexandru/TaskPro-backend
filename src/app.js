@@ -9,6 +9,13 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from 'path';
 
+// Route file import and use
+import authRouter from './routes/authRouter.js';
+import usersRouter from './routes/usersRouter.js';
+import cardsRouter from './routes/cardsRouter.js';
+import columnsRouter from './routes/columnsRouter.js';
+import boardsRouter from './routes/boardsRouter.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,10 +27,11 @@ const app = express();
 // Swagger configuration
 const swaggerOptions = {
   swaggerDefinition: {
+    openapi: '3.0.0',
     info: {
       title: 'API Documentation',
       version: '1.0.0',
-      description: 'API information',
+      description: 'API documentation for TaskPro App',
     },
     servers: [
       {
@@ -31,7 +39,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./routes/*.js'], // Path to the API docs
+  apis: ['./src/routes/*.js'], // Path to the API docs
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
@@ -42,16 +50,11 @@ app.use(cors()); // For enabling CORS
 app.use(express.json()); // For parsing JSON request bodies
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // Swagger docs
 
-// Route file import and use
-import authRouter from './routes/authRouter.js';
-import usersRouter from "./routes/usersRouter.js";
-import cardsRouter from './routes/cardsRouter.js';
-import columnsRouter from "./routes/columnsRouter.js";
-import boardsRouter from "./routes/boardsRouter.js";
+
 
 app.use('/api/auth', authRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use("/api/user", usersRouter);
+app.use('/api/user', usersRouter);
 app.use('/api/boards', boardsRouter);
 app.use('/api/boards/:boardId/columns', columnsRouter); // Nested columns routes
 app.use('/api/boards/:boardId/columns/:columnId/cards', cardsRouter); // Nested cards routes under columns

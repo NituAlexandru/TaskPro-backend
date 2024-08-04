@@ -7,16 +7,29 @@ import Card from '../models/cardModel.js';
 
 const boardsRouter = express.Router();
 
-// Get all boards for a user
+/**
+ * @swagger
+ * tags:
+ *   name: Boards
+ *   description: API for managing boards
+ */
 
+/**
+ * @swagger
+ * /api/boards:
+ *   get:
+ *     summary: Get all boards for the authenticated user
+ *     tags: [Boards]
+ *     responses:
+ *       200:
+ *         description: List of user boards
+ *       500:
+ *         description: Server error
+ */
 const getUserBoards = async (req, res) => {
   try {
-    const userId = req.user.id;
-    console.log(`Fetching boards for user: ${userId}`);
-    
+    const userId = req.user.id; 
     const boards = await Board.find({ owner: userId }).populate('collaborators');
-    
-    console.log(`Found boards: ${boards.length}`);
     res.json(boards);
   } catch (error) {
     console.error('Error fetching boards:', error.message);
@@ -26,7 +39,33 @@ const getUserBoards = async (req, res) => {
 
 boardsRouter.get('/', authMiddleware, getUserBoards);
 
-// Get all data for a specific board
+/**
+ * @swagger
+ * /api/boards/{boardId}:
+ *   get:
+ *     summary: Get all data for a specific board
+ *     tags: [Boards]
+ *     parameters:
+ *       - in: path
+ *         name: boardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the board
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Filter cards by priority
+ *     responses:
+ *       200:
+ *         description: Board data including columns and cards
+ *       404:
+ *         description: Board not found
+ *       500:
+ *         description: Server error
+ */
 export const getBoardData = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -47,7 +86,7 @@ export const getBoardData = async (req, res) => {
       if (priority) {
         filter.priority = priority;
       }
-      const cards = await Card.find(filter).populate('collaborators', 'name avatarURL' );
+      const cards = await Card.find(filter).populate('collaborators', 'name avatarURL');
       return {
         ...column.toObject(),
         cards,
@@ -66,51 +105,131 @@ export const getBoardData = async (req, res) => {
 
 boardsRouter.get('/:boardId', authMiddleware, getBoardData);
 
-// Add a new board
-
+/**
+ * @swagger
+ * /api/boards:
+ *   post:
+ *     summary: Add a new board
+ *     tags: [Boards]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleBoard:
+ *                 type: string
+ *               background:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *               collaborators:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Board created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
 export const addBoard = async (req, res) => {
-    const { error } = addBoardSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-    try {
-      const userId = req.user.id;
-      const { titleBoard, background, icon, collaborators } = req.body;
-      const newBoard = new Board({ owner: userId, titleBoard, background, icon, collaborators });
-      await newBoard.save();
-      res.status(201).json(newBoard);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
+  const { error } = addBoardSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  try {
+    const userId = req.user.id;
+    const { titleBoard, background, icon, collaborators } = req.body;
+    const newBoard = new Board({ owner: userId, titleBoard, background, icon, collaborators });
+    await newBoard.save();
+    res.status(201).json(newBoard);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 boardsRouter.post('/', authMiddleware, addBoard);
 
-// Update a board
-
+/**
+ * @swagger
+ * /api/boards/{boardId}:
+ *   put:
+ *     summary: Update a board
+ *     tags: [Boards]
+ *     parameters:
+ *       - in: path
+ *         name: boardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the board to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               titleBoard:
+ *                 type: string
+ *               background:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *               collaborators:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Board updated successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
 export const updateBoard = async (req, res) => {
-    const { error } = updateBoardSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-    try {
-      const { boardId } = req.params;
-      const { titleBoard, background, icon, collaborators } = req.body;
-      const updatedBoard = await Board.findByIdAndUpdate(
-        boardId,
-        { titleBoard, background, icon, collaborators },
-        { new: true }
-      );
-      res.json(updatedBoard);
-    } catch (error) {
-      res.status(500).json({ error: 'Server error' });
-    }
+  const { error } = updateBoardSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  try {
+    const { boardId } = req.params;
+    const { titleBoard, background, icon, collaborators } = req.body;
+    const updatedBoard = await Board.findByIdAndUpdate(
+      boardId,
+      { titleBoard, background, icon, collaborators },
+      { new: true }
+    );
+    res.json(updatedBoard);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 };
 
 boardsRouter.put('/:boardId', authMiddleware, updateBoard);
 
-// Delete a board
-
+/**
+ * @swagger
+ * /api/boards/{boardId}:
+ *   delete:
+ *     summary: Delete a board
+ *     tags: [Boards]
+ *     parameters:
+ *       - in: path
+ *         name: boardId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the board to delete
+ *     responses:
+ *       200:
+ *         description: Board deleted successfully
+ *       500:
+ *         description: Server error
+ */
 export const deleteBoard = async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -123,4 +242,4 @@ export const deleteBoard = async (req, res) => {
 
 boardsRouter.delete('/:boardId', authMiddleware, deleteBoard);
 
- export default boardsRouter;
+export default boardsRouter;

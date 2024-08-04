@@ -6,18 +6,77 @@ import createError from '../utils/error.js';
 import User from '../models/userModel.js';
 import Session from '../models/sessionModel.js';
 import ctrlWrapper from '../utils/ctrlWrapper.js';
-import queryString from "query-string";
-import axios from "axios";
+import queryString from 'query-string';
+import axios from 'axios';
 import { signUpSchema, signInSchema, refreshTokenSchema } from '../models/userModel.js';
 
 dotenv.config();
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, GOOGLE_CLIENT_ID, BACKEND_URL, GOOGLE_CLIENT_SECRET, FRONT_URL } = process.env;
 
 const authRouter = express.Router();
 
-// signUp
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: The user's name
+ *         email:
+ *           type: string
+ *           description: The user's email
+ *         password:
+ *           type: string
+ *           description: The user's password
+ *         avatarURL:
+ *           type: string
+ *           description: The user's avatar URL
+ *         theme:
+ *           type: string
+ *           description: The user's theme
+ *       example:
+ *         name: John Doe
+ *         email: john.doe@example.com
+ *         password: password123
+ *         avatarURL: default
+ *         theme: dark
+ */
 
+/**
+ * @swagger
+ * tags:
+ *   name: Auth
+ *   description: The authentication managing API
+ */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Bad request
+ *       409:
+ *         description: Conflict - email already exists
+ */
 const signUp = async (req, res, next) => {
   const { error } = signUpSchema.validate(req.body);
 
@@ -54,8 +113,8 @@ const signUp = async (req, res, next) => {
 
   res.status(201).json({
     message: "Successful operation",
-    token: token,
-    refreshToken: refreshToken,
+    token,
+    refreshToken,
     user: {
       name: newUser.name,
       email: newUser.email,
@@ -67,8 +126,32 @@ const signUp = async (req, res, next) => {
 
 authRouter.post('/register', ctrlWrapper(signUp));
 
-// signIn
-
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: The user's email
+ *               password:
+ *                 type: string
+ *                 description: The user's password
+ *     responses:
+ *       200:
+ *         description: Successful operation
+ *       400:
+ *         description: Bad request
+ *       403:
+ *         description: Invalid email or password
+ */
 const signIn = async (req, res, next) => {
   const { error } = signInSchema.validate(req.body);
 
@@ -113,10 +196,30 @@ const signIn = async (req, res, next) => {
     },
   });
 };
+
 authRouter.post('/login', ctrlWrapper(signIn));
 
-//refreshToken
-
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Refresh JWT token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *       403:
+ *         description: Invalid refresh token
+ */
 const refreshToken = async (req, res) => {
   const { error } = refreshTokenSchema.validate(req.body);
 
@@ -140,55 +243,81 @@ const refreshToken = async (req, res) => {
     }
 
     const payload = {
-      id: id,
-      sid: sid,
+      id,
+      sid,
     };
 
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
-    const newRefreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "20h" });
+    const newRefreshToken = jwt.sign(payload, SECRET_KEY, { expiresIn: "7d" });
 
     res.status(200).json({
       message: "Token refreshed successfully",
-      token: token,
+      token,
       refreshToken: newRefreshToken,
     });
   } catch (error) {
     throw createError(403, "Invalid refresh token");
   }
 };
-  authRouter.post('/refresh-token', ctrlWrapper(refreshToken));
 
-// logOut
+authRouter.post('/refresh-token', ctrlWrapper(refreshToken));
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log out a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: The refresh token
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       403:
+ *         description: Invalid refresh token
+ */
 const logOut = async (req, res) => {
-    const { refreshToken: requestToken } = req.body;
-  
-    if (!requestToken) {
-      throw createError(403, "Refresh token is required");
-    }
-  
-    try {
-      const { sid } = jwt.verify(requestToken, SECRET_KEY);
-  
-      const session = await Session.findById(sid);
-      if (!session) {
-        throw createError(403, "Invalid refresh token");
-      }
-  
-      await Session.findByIdAndDelete(sid);
-  
-      res.status(200).json({ message: "Logout successful" });
-    } catch (error) {
+  const { refreshToken: requestToken } = req.body;
+
+  if (!requestToken) {
+    throw createError(403, "Refresh token is required");
+  }
+
+  try {
+    const { sid } = jwt.verify(requestToken, SECRET_KEY);
+
+    const session = await Session.findById(sid);
+    if (!session) {
       throw createError(403, "Invalid refresh token");
     }
-  };
 
-  authRouter.post('/logout', ctrlWrapper(logOut));
+    await Session.findByIdAndDelete(sid);
 
-// googleAuth
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    throw createError(403, "Invalid refresh token");
+  }
+};
 
-const { GOOGLE_CLIENT_ID, BACKEND_URL } = process.env;
+authRouter.post('/logout', ctrlWrapper(logOut));
 
+/**
+ * @swagger
+ * /api/auth/google:
+ *   get:
+ *     summary: Redirect to Google authentication
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google authentication
+ */
 const googleAuth = (req, res) => {
   const stringifiedParams = queryString.stringify({
     client_id: GOOGLE_CLIENT_ID,
@@ -207,13 +336,20 @@ const googleAuth = (req, res) => {
   );
 };
 
-
 authRouter.get('/google', ctrlWrapper(googleAuth));
 
-//googleRedirect
-
-const {GOOGLE_CLIENT_SECRET, FRONT_URL} = process.env;
-
+/**
+ * @swagger
+ * /api/auth/google-redirect:
+ *   get:
+ *     summary: Handle Google authentication redirect
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to front-end with tokens and session info
+ *       500:
+ *         description: Internal server error
+ */
 const googleRedirect = async (req, res) => {
   try {
     const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
