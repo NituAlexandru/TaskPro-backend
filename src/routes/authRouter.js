@@ -362,10 +362,13 @@ authRouter.get("/google", ctrlWrapper(googleAuth));
  */
 const googleRedirect = async (req, res) => {
   try {
+    console.log("Full URL:", req.originalUrl);
+
     const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const urlParams = queryString.parse(fullUrl.split("?")[1]);
 
     const code = urlParams.code;
+    console.log("Authorization code:", code);
 
     const tokenResponse = await axios({
       method: "post",
@@ -383,6 +386,7 @@ const googleRedirect = async (req, res) => {
     });
 
     const { access_token, id_token } = tokenResponse.data;
+    console.log("Tokens received:", { access_token, id_token });
 
     const userInfoResponse = await axios({
       method: "get",
@@ -393,6 +397,7 @@ const googleRedirect = async (req, res) => {
     });
 
     const { email, name, picture } = userInfoResponse.data;
+    console.log("User info:", { email, name, picture });
 
     let user = await User.findOne({ email });
 
@@ -403,6 +408,9 @@ const googleRedirect = async (req, res) => {
         avatarURL: picture,
         password: await bcrypt.hash(Math.random().toString(36).slice(-8), 12),
       });
+      console.log("New user created:", user);
+    } else {
+      console.log("Existing user found:", user);
     }
 
     const newSession = await Session.create({
@@ -422,6 +430,7 @@ const googleRedirect = async (req, res) => {
       `${FRONT_URL}#/auth/callback?token=${token}&refreshToken=${refreshToken}&sid=${newSession._id}`
     );
     // # - se adauga doar pentru github pages ca sa functioneze HashRouter.
+    console.log("Redirect to front-end with tokens");
   } catch (error) {
     console.error("Error during Google authentication:", error);
     res.status(500).send("Internal Server Error");
