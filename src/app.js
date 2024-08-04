@@ -46,7 +46,17 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Middleware
 app.use(logger('dev')); // For logging requests
+
+
 app.use(cors()); // For enabling CORS
+
+// const corsOptions = {
+//   origin: "https://numele-frontendului-tau.onrender.com",
+//   optionsSuccessStatus: 200,
+// };
+
+// app.use(cors(corsOptions));
+
 app.use(express.json()); // For parsing JSON request bodies
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs)); // Swagger docs
 
