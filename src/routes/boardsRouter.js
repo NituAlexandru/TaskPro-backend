@@ -1,9 +1,9 @@
-import express from 'express';
-import Board from '../models/boardModel.js';
-import { addBoardSchema, updateBoardSchema } from '../models/boardModel.js';
-import authMiddleware from '../middleware/auth.js';
-import Column from '../models/columnModel.js';
-import Card from '../models/cardModel.js';
+import express from "express";
+import Board from "../models/boardModel.js";
+import { addBoardSchema, updateBoardSchema } from "../models/boardModel.js";
+import authMiddleware from "../middleware/auth.js";
+import Column from "../models/columnModel.js";
+import Card from "../models/cardModel.js";
 
 const boardsRouter = express.Router();
 
@@ -28,16 +28,23 @@ const boardsRouter = express.Router();
  */
 const getUserBoards = async (req, res) => {
   try {
-    const userId = req.user.id; 
-    const boards = await Board.find({ owner: userId }).populate('collaborators');
+    const userId = req.user.id;
+    // Căutăm boardurile unde utilizatorul este fie owner, fie colaborator
+    const boards = await Board.find({
+      $or: [
+        { owner: userId }, // boarduri deținute
+        { collaborators: userId }, // boarduri la care este colaborator
+      ],
+    }).populate("collaborators");
+
     res.json(boards);
   } catch (error) {
-    console.error('Error fetching boards:', error.message);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error fetching boards:", error.message);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-boardsRouter.get('/', authMiddleware, getUserBoards);
+boardsRouter.get("/", authMiddleware, getUserBoards);
 
 /**
  * @swagger
@@ -72,38 +79,46 @@ export const getBoardData = async (req, res) => {
     const { priority } = req.query; // Get priority from query parameters
 
     // Find the board and populate collaborators
-    const board = await Board.findById(boardId).populate('collaborators', 'name avatarURL');
+    const board = await Board.findById(boardId).populate(
+      "collaborators",
+      "name avatarURL"
+    );
     if (!board) {
-      return res.status(404).json({ error: 'Board not found' });
+      return res.status(404).json({ error: "Board not found" });
     }
 
     // Get all columns for the board
     const columns = await Column.find({ boardId });
 
     // Get all cards for each column with optional priority filter
-    const columnsWithCards = await Promise.all(columns.map(async (column) => {
-      const filter = { columnId: column._id };
-      if (priority) {
-        filter.priority = priority;
-      }
-      const cards = await Card.find(filter).populate('collaborators', 'name avatarURL');
-      return {
-        ...column.toObject(),
-        cards,
-      };
-    }));
+    const columnsWithCards = await Promise.all(
+      columns.map(async (column) => {
+        const filter = { columnId: column._id };
+        if (priority) {
+          filter.priority = priority;
+        }
+        const cards = await Card.find(filter).populate(
+          "collaborators",
+          "name avatarURL"
+        );
+        return {
+          ...column.toObject(),
+          cards,
+        };
+      })
+    );
 
     res.json({
       ...board.toObject(),
       columns: columnsWithCards,
     });
   } catch (error) {
-    console.error('Error fetching board data:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error fetching board data:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-boardsRouter.get('/:boardId', authMiddleware, getBoardData);
+boardsRouter.get("/:boardId", authMiddleware, getBoardData);
 
 /**
  * @swagger
@@ -143,15 +158,21 @@ export const addBoard = async (req, res) => {
   try {
     const userId = req.user.id;
     const { titleBoard, background, icon, collaborators } = req.body;
-    const newBoard = new Board({ owner: userId, titleBoard, background, icon, collaborators });
+    const newBoard = new Board({
+      owner: userId,
+      titleBoard,
+      background,
+      icon,
+      collaborators,
+    });
     await newBoard.save();
     res.status(201).json(newBoard);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-boardsRouter.post('/', authMiddleware, addBoard);
+boardsRouter.post("/", authMiddleware, addBoard);
 
 /**
  * @swagger
@@ -205,11 +226,11 @@ export const updateBoard = async (req, res) => {
     );
     res.json(updatedBoard);
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-boardsRouter.put('/:boardId', authMiddleware, updateBoard);
+boardsRouter.put("/:boardId", authMiddleware, updateBoard);
 
 /**
  * @swagger
@@ -234,12 +255,12 @@ export const deleteBoard = async (req, res) => {
   try {
     const { boardId } = req.params;
     await Board.findByIdAndDelete(boardId);
-    res.json({ message: 'Board deleted' });
+    res.json({ message: "Board deleted" });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-boardsRouter.delete('/:boardId', authMiddleware, deleteBoard);
+boardsRouter.delete("/:boardId", authMiddleware, deleteBoard);
 
 export default boardsRouter;
